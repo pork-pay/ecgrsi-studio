@@ -66,12 +66,36 @@ function renderBlind(parent,item,plan){
  else if(item.status!=='complete')box.append(el('p','盲读未完成：'+(item.error||'等待补充结果'),'error'),el('p','前面的验收结果已保留。'));
  else{
   const r=item.result,c=item.comparison;
-  box.append(el('p','原目标：'+(plan?.title||'见方案')),el('p','盲读结论：'+r.primary_diagnosis),el('p','模型自报置信度：'+r.confidence+' / 100'));
-  if(c)box.append(el('p',({matched:'目标表型全部命中',partial:'仅识别出部分目标表型',not_matched:'未识别出目标表型',unmapped:'该目标暂不做自动表型匹配，请对照结论'}[c.status])+'；表型命中不等于精确疾病诊断一致。'));
-  for(const evidence of r.evidence)box.append(el('p','读图依据：'+evidence));
-  if(r.differential_diagnoses.length)box.append(el('p','备选判断：'+r.differential_diagnoses.join('；')));
-  for(const note of r.limitations)box.append(el('p',note,'muted'));
-  box.append(el('p','输入仅含中性标注的生成波形图，未提供目标、编辑方案、测量答案或既往评分。','muted'));
+  const criteria={
+   sinus_bradycardia:['窦性心动过缓','可辨认窦性 P 波、P–QRS 关系一致，心率＜60 次/分'],
+   sinus_tachycardia:['窦性心动过速','可辨认窦性 P 波、P–QRS 关系一致，心率＞100 次/分'],
+   first_degree_av_block:['一度房室传导阻滞样 PR 延长','P 波起点与 QRS 起点可辨，PR＞200 ms，P 波与 QRS 保持 1∶1 传导'],
+   mobitz_ii:['Mobitz II 型传导阻滞','间歇性 P 波后无 QRS，已传导心搏的 PR 相对恒定，并排除未下传房早等解释'],
+   atrial_fibrillation:['房颤样表型','R–R 间期绝对不齐，无一致可辨的 P 波，排除伪差及频发早搏'],
+   st_elevation:['ST 段抬高','基线与 J 点可辨，目标导联有可信 ST 抬高；疾病判断还需导联分布及相应幅度标准'],
+   st_depression:['ST 段压低','基线可辨，目标导联有可信 ST 压低，记录幅度、形态与导联分布'],
+   t_inversion:['T 波倒置','目标导联 T 波确实倒置，并结合导联正常变异及 QRS 方向判断'],
+   wide_qrs:['宽 QRS','QRS 起止点可辨，时限≥120 ms'],
+   low_p_amplitude:['低幅 P 波','P 波可辨且幅度偏低；仅凭生成图不能确认相对母波形的降幅']
+  };
+  const targets=c?.expected_phenotypes||[],hits=new Set(c?.recognized_phenotypes||[]);
+  const verdict=c?.status==='matched'?'支持目标表型':c?.status==='partial'?'部分支持，尚未完整支持目标':'证据不足，暂不支持目标';
+  box.append(el('p','最终判定：'+verdict),el('p','目标：'+(plan?.title||'见方案')));
+  if(targets.length){
+   for(const code of targets){const spec=criteria[code]||[code,'需结合目标定义核对读图证据'];
+    box.append(el('p',spec[0]+'：'+(hits.has(code)?'盲读已识别':'盲读未确认')));
+    box.append(el('p','支持条件：'+spec[1]));
+   }
+  }else box.append(el('p','该方案尚无可自动核对的表型条件，需人工对照目标与读图结果。'));
+  box.append(el('p','实际读图：'+r.primary_diagnosis));
+  if(r.limitations?.length)box.append(el('p','证据限制：'+r.limitations.join('；'),'muted'));
+  box.append(el('p','以上为独立盲读对目标表型的支持情况；未确认不代表已排除。支持条件是核对标准，不是本图实测值。','muted'));
+  const detail=el('details');detail.append(el('summary','查看完整读图依据'));
+  for(const evidence of r.evidence||[])detail.append(el('p',evidence));
+  if(r.differential_diagnoses?.length)detail.append(el('p','备选判断：'+r.differential_diagnoses.join('；')));
+  detail.append(el('p','读图置信度：'+r.confidence+' / 100（不是验收分数）','muted'));
+  detail.append(el('p','盲读仅输入中性波形图；目标与支持条件在读图结束后对照，不提前提供给模型。','muted'));
+  box.append(detail);
  }
  parent.append(box);
 }
