@@ -16,9 +16,18 @@
  const rounds=el('section',undefined,'panel rounds-panel');rounds.innerHTML='<div class="panel-heading"><div><span class="overline">迭代记录</span><h2>各轮意见与算子更新</h2><p class="muted">每轮保留方案审核、波形审核、主审方向与源码版本。点击本轮波形可切换上方视图。</p></div></div>';
  rounds.append($('autoTimeline'),$('autoReason'));detail.append(rounds,review);
  const sidebarNav=document.querySelector('.sidebar .nav');sidebarNav.textContent='波形操作台';sidebarNav.onclick=()=>show('work');const sideDetail=el('button','波形与迭代详情','nav');sideDetail.onclick=()=>show('detail');sidebarNav.after(sideDetail);
- document.querySelector('.page-title h1').textContent='心电波形，从需求到迭代';
- document.querySelector('.page-title p').textContent='在操作台生成与修订，在详情页观察波形、查看每轮意见。';
+ document.querySelector('.page-title h1').textContent='描述目标，观察每一步改变';
+ document.querySelector('.page-title p').textContent='对话生成 · 自动 RSI · 独立审计';
  $('returnWork').onclick=()=>show('work');
+ const planFold=el('details',undefined,'plan-input-fold'),planLabel=el('summary','查看待执行的完整方案');planFold.append(planLabel);const disease=document.querySelector('.auto-disease');disease.before(planFold);planFold.append(disease);
+ const policy=el('details',undefined,'policy-fold');policy.append(el('summary','验收规则与后台算子库'));const explanation=document.querySelector('.auto-explanation');explanation.before(policy);policy.append(explanation);
+ $('autoPanel').querySelector('h2').textContent='自动 RSI · 最多 5 轮';
+ const planHint=el('div','生成方案后自动带入，点击开始即可。','plan-brief');document.querySelector('.auto-config').before(planHint);
+ new MutationObserver(()=>{planHint.textContent=$('autoPlanNote').hidden?'生成方案后自动带入，点击开始即可。':$('autoPlanNote').textContent}).observe($('autoPlanNote'),{childList:true,attributes:true});
+ // Only anonymize presentation text; API model IDs, input values and saved records stay intact.
+ function mask(root){const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walker.nextNode()){if(n.parentElement?.closest('script,style,textarea,option'))continue;const t=modelLabel(n.nodeValue);if(t!==n.nodeValue)n.nodeValue=t}}
+ mask(document.body);new MutationObserver(records=>{for(const r of records){if(r.type==='characterData'){const n=r.target;if(!n.parentElement?.closest('script,style,textarea,option')){const t=modelLabel(n.nodeValue);if(t!==n.nodeValue)n.nodeValue=t}}else for(const n of r.addedNodes){if(n.nodeType===1)mask(n);else if(n.nodeType===3&&!n.parentElement?.closest('script,style,textarea,option')){const t=modelLabel(n.nodeValue);if(t!==n.nodeValue)n.nodeValue=t}}}}).observe(document.body,{childList:true,subtree:true,characterData:true});
+ $('detailLead').value='II';$('detailWindow').value='5';
  let selected='work',frame=0;
  function show(view,updateHash=true){selected=view==='detail'?'detail':'work';work.hidden=selected!=='work';detail.hidden=selected!=='detail';nav.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.view===selected);b.setAttribute('aria-current',b.dataset.view===selected?'page':'false')});sidebarNav.classList.toggle('active',selected==='work');sideDetail.classList.toggle('active',selected==='detail');if(updateHash&&location.hash!=='#'+selected)historyReplace(selected);queue();}
  function historyReplace(view){window.history.replaceState(null,'',location.pathname+location.search+'#'+view)}
@@ -40,7 +49,7 @@
   const duration=original.duration,span=$('detailWindow').value==='all'?duration:Math.min(duration,Number($('detailWindow').value));
   $('detailStart').max=Math.max(0,duration-span);$('detailStart').disabled=span>=duration;const start=Math.min(Number($('detailStart').value),duration-span);$('detailStart').value=start;$('detailRange').textContent=start.toFixed(2)+' – '+(start+span).toFixed(2)+' s';
   const focus=$('detailLead').value,indices=focus==='all'?original.leads.map((_,i)=>i):[original.leads.indexOf(focus)];
-  canvas.style.height=focus==='all'?'960px':'420px';const width=canvas.getBoundingClientRect().width,height=focus==='all'?960:420;if(!width)return;
+  canvas.style.height=focus==='all'?'960px':'440px';const width=canvas.getBoundingClientRect().width,height=focus==='all'?960:440;if(!width)return;
   const dpr=devicePixelRatio||1;canvas.width=width*dpr;canvas.height=height*dpr;const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,width,height);
   const pad=52,right=14,cw=width-pad-right,rowH=height/indices.length,gain=Number($('detailGain').value),mode=$('detailMode').value;
   let bound=1.5;for(const w of [original,edited])if(w)for(const row of w.signal)for(const v of row)bound=Math.max(bound,Math.abs(v)*1.05);

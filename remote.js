@@ -19,7 +19,7 @@ form.onsubmit=async e=>{
   if(!response.ok)throw Error(response.status===401?'访问密码不正确。':'后端暂不可用（'+response.status+'）。');
   const h=await response.json();if(!h.featuredb)throw Error('Mac 后端的 FeatureDB 尚未就绪。');
   localStorage.setItem('ecgrsi.endpoint',endpoint);document.getElementById('remotePassword').value='';
-  await loadScript('./companion.js');await loadScript('./app.js?v=views1');await loadScript('./views.js?v=views1');
+  await loadScript('./companion.js');await loadScript('./app.js?v=presentation2');await loadScript('./views.js?v=presentation2');
   gate.hidden=true;for(const child of document.body.children)child.inert=false;
  }catch(e){token='';error.textContent=e.message==='Failed to fetch'?'连接失败：请确认 Mac 在线、隧道已启用、地址正确。':e.message;button.disabled=false}
 };
